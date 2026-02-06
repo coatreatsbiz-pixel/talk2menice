@@ -49,3 +49,37 @@ const handleSend = async (inputText) => {
   setChat([...chat, { from: "Pal", message: data.palResponse }]);
   speakText(data.palResponse); // Step 5.3 handles voice
 };
+
+function speakText(text) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Use user-selected Pal voice if available
+    utterance.voice = speechSynthesis.getVoices().find(v => v.name === selectedVoiceName);
+
+    // Apply user volume & speed settings
+    utterance.volume = volumeLevel; // 0.0 → 1.0
+    utterance.rate = speedLevel;    // 0.5 → 2.0
+
+    speechSynthesis.speak(utterance);
+  } else {
+    console.warn("TTS not supported in this browser");
+  }
+}
+
+const handleSend = async (inputText) => {
+  const res = await fetch("/api/conversation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userInput: inputText,
+      palName: selectedPalNickname,
+      language: selectedLanguage
+    })
+  });
+  const data = await res.json();
+  setChat([...chat, { from: "Pal", message: data.palResponse }]);
+
+  // Speak the Pal’s response
+  speakText(data.palResponse);
+};
